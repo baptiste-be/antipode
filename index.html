@@ -1,6 +1,8 @@
 <! DOCTYPE>
 <html lang=fr>
 <title>Antipodia</title>
+<link rel="stylesheet" href="https://unpkg.com" />
+<script src="https://unpkg.com"></script>
 <style>
 .carte{
 height:500px;
@@ -12,6 +14,15 @@ padding:10px 20px;
 margin-top: 15px;
 cursor: pointer;
 background-color: #3498db;
+color: white;
+border: none;
+border-radius: 5px;
+}
+.bouton-placer-le-point-actif{
+padding:10px 20px;
+margin-top: 15px;
+cursor: pointer;
+background-color: #e67e22;
 color: white;
 border: none;
 border-radius: 5px;
@@ -35,8 +46,75 @@ border: none;
 border-radius: 5px;
 }
 </style>
-<iframe class="carte" src="https://openstreetmap.org/export/embed.html"></iframe>
+<div id="ma-zone-carte" class="carte"></div>
 <button class="bouton-placer-le-point" onclick="placerpoint()">Placer le point</button>
 <button class="bouton-trouver-antipode" onclick="antipode()">Trouver l'Antipode</button>
 <button class="bouton-ouvrir-dans-google-maps" onclick="googlemaps()">Ouvrir dans Google Maps</button>
+<script>
+var maCarte = L.map('ma-zone-carte').setView([20, 0], 2);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap'
+    }).addTo(maCarte);
+  
+    var monMarqueur = L.marker();
+    var modePoseActive = false;
+    var latitudeActuelle = 0;
+    var longitudeActuelle = 0;
+
+    function placerpoint() {
+        modePoseActive = true;
+        var bouton = document.getElementById('btn-pose');
+        bouton.className = "bouton-placer-le-point-actif"; // Devient orange
+        bouton.innerText = "Cliquez sur la carte...";
+    }
+
+    maCarte.on('click', function(evenement) {
+        if (modePoseActive === true) {
+
+            latitudeActuelle = evenement.latlng.lat;
+            longitudeActuelle = evenement.latlng.lng;
+
+
+            monMarqueur.setLatLng(evenement.latlng).addTo(maCarte);
+
+
+            modePoseActive = false;
+            var bouton = document.getElementById('btn-pose');
+            bouton.className = "bouton-placer-le-point"; // Redevient bleu
+            bouton.innerText = "Placer le point";
+        }
+    });
+
+
+    function antipode() {
+        if (latitudeActuelle === 0 && longitudeActuelle === 0) {
+            alert("Veuillez d'abord placer un point sur la carte !");
+            return;
+        }
+
+        var lantiLat = -latitudeActuelle;
+        var lantiLng = longitudeActuelle > 0 ? longitudeActuelle - 180 : longitudeActuelle + 180;
+
+      
+        maCarte.setView([lantiLat, lantiLng], 5);
+
+
+        monMarqueur.setLatLng([lantiLat, lantiLng]);
+        
+
+        latitudeActuelle = lantiLat;
+        longitudeActuelle = lantiLng;
+    }
+
+
+    function googlemaps() {
+        if (latitudeActuelle === 0 && longitudeActuelle === 0) {
+            alert("Veuillez d'abord placer un point ou trouver l'antipode !");
+            return;
+        }
+        var urlGoogleMaps = "https://google.com" + latitudeActuelle + "," + longitudeActuelle;
+
+        window.open(urlGoogleMaps, '_blank');
+    }
+</script>
 </html>
