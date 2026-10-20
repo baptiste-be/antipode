@@ -1,118 +1,82 @@
-<! DOCTYPE>
-<html lang=fr>
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
 <title>Antipodia</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
-.carte{
-height:500px;
-width:100%;
-border-radius: 5px;
+.carte { height: 500px; width: 100%; border-radius: 5px; }
+.boutons { display: flex; gap: 10px; margin-top: 15px; }
+button {
+  padding: 10px 20px; cursor: pointer; color: white;
+  border: none; border-radius: 5px; background-color: #3498db;
 }
-.bouton-placer-le-point{
-padding:10px 20px;
-margin-top: 15px;
-cursor: pointer;
-background-color: #3498db;
-color: white;
-border: none;
-border-radius: 5px;
-}
-.bouton-placer-le-point-actif{
-padding:10px 20px;
-margin-top: 15px;
-cursor: pointer;
-background-color: #e67e22;
-color: white;
-border: none;
-border-radius: 5px;
-}
-.bouton-trouver-antipode{
-padding:10px 20px;
-margin-top: 30px;
-cursor: pointer;
-background-color: #3498db;
-color: white;
-border: none;
-border-radius: 5px;
-}
-.bouton-ouvrir-dans-google-maps{
-padding:10px 20px;
-margin-top: 90px;
-cursor: pointer;
-background-color: #3498db;
-color: white;
-border: none;
-border-radius: 5px;
-}
+button.actif { background-color: #e67e22; }
 </style>
-<div id="ma-zone-carte" class="carte" src="https://unpkg.com/leaflet/dist/leaflet.css"></div>
-<button class="bouton-placer-le-point" onclick="placerpoint()">Placer le point</button>
-<button class="bouton-trouver-antipode" onclick="antipode()">Trouver l'Antipode</button>
-<button class="bouton-ouvrir-dans-google-maps" onclick="googlemaps()">Ouvrir dans Google Maps</button>
+</head>
+<body>
+<div id="ma-zone-carte" class="carte"></div>
+
+<div class="boutons">
+  <button id="btn-pose" onclick="placerpoint()">Placer le point</button>
+  <button onclick="antipode()">Trouver l'Antipode</button>
+  <button onclick="googlemaps()">Ouvrir dans Google Maps</button>
+</div>
+
 <script>
 var maCarte = L.map('ma-zone-carte').setView([20, 0], 2);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap'
-    }).addTo(maCarte);
-  
-    var monMarqueur = L.marker();
-    var modePoseActive = false;
-    var latitudeActuelle = 0;
-    var longitudeActuelle = 0;
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '© OpenStreetMap'
+}).addTo(maCarte);
 
-    function placerpoint() {
-        modePoseActive = true;
-        var bouton = document.getElementById('btn-pose');
-        bouton.className = "bouton-placer-le-point-actif"; // Devient orange
-        bouton.innerText = "Cliquez sur la carte...";
-    }
+var monMarqueur = L.marker([0, 0]);
+var modePoseActive = false;
+var pointPlace = false;
+var latitudeActuelle = 0;
+var longitudeActuelle = 0;
 
-    maCarte.on('click', function(evenement) {
-        if (modePoseActive === true) {
+function placerpoint() {
+  modePoseActive = true;
+  var bouton = document.getElementById('btn-pose');
+  bouton.classList.add('actif');
+  bouton.innerText = "Cliquez sur la carte...";
+}
 
-            latitudeActuelle = evenement.latlng.lat;
-            longitudeActuelle = evenement.latlng.lng;
+maCarte.on('click', function (e) {
+  if (!modePoseActive) return;
+  latitudeActuelle = e.latlng.lat;
+  longitudeActuelle = e.latlng.lng;
+  pointPlace = true;
+  monMarqueur.setLatLng(e.latlng).addTo(maCarte);
 
+  modePoseActive = false;
+  var bouton = document.getElementById('btn-pose');
+  bouton.classList.remove('actif');
+  bouton.innerText = "Placer le point";
+});
 
-            monMarqueur.setLatLng(evenement.latlng).addTo(maCarte);
+function antipode() {
+  if (!pointPlace) {
+    alert("Veuillez d'abord placer un point sur la carte !");
+    return;
+  }
+  var lat = -latitudeActuelle;
+  var lng = longitudeActuelle > 0 ? longitudeActuelle - 180 : longitudeActuelle + 180;
 
+  maCarte.setView([lat, lng], 5);
+  monMarqueur.setLatLng([lat, lng]);
+  latitudeActuelle = lat;
+  longitudeActuelle = lng;
+}
 
-            modePoseActive = false;
-            var bouton = document.getElementById('btn-pose');
-            bouton.className = "bouton-placer-le-point"; // Redevient bleu
-            bouton.innerText = "Placer le point";
-        }
-    });
-
-
-    function antipode() {
-        if (latitudeActuelle === 0 && longitudeActuelle === 0) {
-            alert("Veuillez d'abord placer un point sur la carte !");
-            return;
-        }
-
-        var lantiLat = -latitudeActuelle;
-        var lantiLng = longitudeActuelle > 0 ? longitudeActuelle - 180 : longitudeActuelle + 180;
-
-      
-        maCarte.setView([lantiLat, lantiLng], 5);
-
-
-        monMarqueur.setLatLng([lantiLat, lantiLng]);
-        
-
-        latitudeActuelle = lantiLat;
-        longitudeActuelle = lantiLng;
-    }
-
-
-    function googlemaps() {
-        if (latitudeActuelle === 0 && longitudeActuelle === 0) {
-            alert("Veuillez d'abord placer un point ou trouver l'antipode !");
-            return;
-        }
-        var urlGoogleMaps = "https://google.com" + latitudeActuelle + "," + longitudeActuelle;
-
-        window.open(urlGoogleMaps, '_blank');
-    }
+function googlemaps() {
+  if (!pointPlace) {
+    alert("Veuillez d'abord placer un point ou trouver l'antipode !");
+    return;
+  }
+  window.open("https://www.google.com/maps?q=" + latitudeActuelle + "," + longitudeActuelle, '_blank');
+}
 </script>
+</body>
 </html>
